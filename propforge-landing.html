@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PropForge — AI Proposal Generator for Freelancers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #f7f4ef;
+    --paper: #eeebe4;
+    --ink:   #1c1a16;
+    --dim:   #6b6456;
+    --rust:  #b84a2a;
+    --rule:  #ddd9d0;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE GRAIN OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 150px;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+
+  .fade { opacity: 0; animation: fadeUp 0.7s ease forwards; }
+  .fade-1 { animation-delay: 0.1s; }
+  .fade-2 { animation-delay: 0.25s; }
+  .fade-3 { animation-delay: 0.4s; }
+  .fade-4 { animation-delay: 0.55s; }
+  .fade-5 { animation-delay: 0.7s; }
+  .fade-6 { animation-delay: 0.85s; }
+
+  /* ── LAYOUT ── */
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    border-bottom: 1px solid var(--rule);
+    padding: 18px 0;
+  }
+  .topbar .wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .logo span { color: var(--rust); }
+  .topbar-tag {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 72px 0 56px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: var(--rust);
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rust);
+    opacity: 0.3;
+    max-width: 40px;
+  }
+  h1 {
+    font-family: 'Lora', Georgia, serif;
+    font-size: clamp(32px, 7vw, 48px);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 22px;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--rust);
+  }
+  .sub {
+    font-size: 14px;
+    color: var(--dim);
+    line-height: 1.8;
+    max-width: 480px;
+    margin-bottom: 40px;
+  }
+
+  /* ── WAITLIST FORM ── */
+  .form-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .input-email {
+    flex: 1;
+    min-width: 200px;
+    padding: 13px 16px;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input-email::placeholder { color: var(--dim); opacity: 0.6; }
+  .input-email:focus { border-color: var(--ink); }
+  .btn-join {
+    padding: 13px 22px;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-join:hover { background: #2e2b24; }
+  .btn-join:active { transform: scale(0.98); }
+  .form-note {
+    font-size: 10px;
+    color: var(--dim);
+    opacity: 0.7;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 0;
+  }
+
+  /* ── NUMBERS ── */
+  .numbers {
+    padding: 40px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .numbers .wrap {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+  }
+  .num-item {
+    padding: 0 0 0 0;
+    border-right: 1px solid var(--rule);
+    padding-right: 24px;
+    padding-left: 0;
+  }
+  .num-item:last-child { border-right: none; padding-left: 24px; padding-right: 0; }
+  .num-item:nth-child(2) { padding-left: 24px; }
+  .num-val {
+    font-family: 'Lora', serif;
+    font-size: 30px;
+    font-weight: 400;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .num-lab {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--rule);
+  }
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 0;
+    padding: 22px 0;
+    border-top: 1px solid var(--rule);
+    transition: background 0.15s;
+  }
+  .step:hover { background: var(--paper); margin: 0 -28px; padding: 22px 28px; }
+  .step-n {
+    font-family: 'Lora', serif;
+    font-size: 20px;
+    font-style: italic;
+    color: var(--rule);
+    line-height: 1;
+    padding-top: 2px;
+  }
+  .step-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 5px;
+    letter-spacing: -0.01em;
+  }
+  .step-desc {
+    font-size: 12px;
+    color: var(--dim);
+    line-height: 1.7;
+  }
+
+  /* ── WHO IT'S FOR ── */
+  .for {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .for-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .for-tag {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .for-tag::before {
+    content: '→';
+    color: var(--rust);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* ── BOTTOM CTA ── */
+  .bottom-cta {
+    padding: 64px 0 56px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .cta-hed {
+    font-family: 'Lora', serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .cta-sub {
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 28px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 24px 0;
+  }
+  footer .wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer-logo {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--dim);
+  }
+  .footer-copy {
+    font-size: 10px;
+    color: var(--dim);
+    opacity: 0.5;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--ink);
+    color: var(--cream);
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 500;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── CURSOR BLINK ── */
+  .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--rust);
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+  }
+
+  /* ── TALLY MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(28,26,22,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--cream);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 36px 32px;
+    max-width: 460px;
+    width: 100%;
+    position: relative;
+    animation: fadeUp 0.3s ease;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 18px;
+    font-size: 20px;
+    color: var(--dim);
+    cursor: pointer;
+    background: none;
+    border: none;
+    line-height: 1;
+    opacity: 0.5;
+    font-family: inherit;
+  }
+  .modal-close:hover { opacity: 1; }
+  .modal h2 {
+    font-family: 'Lora', serif;
+    font-size: 22px;
+    font-weight: 400;
+    margin-bottom: 6px;
+  }
+  .modal p {
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 24px;
+    line-height: 1.7;
+  }
+  .modal-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    outline: none;
+    margin-bottom: 10px;
+    transition: border-color 0.15s;
+  }
+  .modal-input:focus { border-color: var(--ink); }
+  .modal-select {
+    width: 100%;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--dim);
+    outline: none;
+    margin-bottom: 18px;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .modal-select:focus { border-color: var(--ink); }
+  .modal-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .modal-btn:hover { background: #2e2b24; }
+  .modal-note {
+    font-size: 10px;
+    color: var(--dim);
+    opacity: 0.6;
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  @media (max-width: 480px) {
+    .numbers .wrap { grid-template-columns: 1fr; gap: 20px; }
+    .num-item { border-right: none; border-bottom: 1px solid var(--rule); padding: 0 0 20px 0 !important; }
+    .num-item:last-child { border-bottom: none; }
+    .for-grid { grid-template-columns: 1fr; }
+    .step:hover { margin: 0; padding: 22px 0; background: transparent; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="wrap">
+    <a href="#" class="logo">Prop<span>Forge</span></a>
+    <span class="topbar-tag">Early Access</span>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow fade fade-1">AI Proposal Generator</div>
+    <h1 class="fade fade-2">Win clients.<br><em>Stop writing.</em></h1>
+    <p class="sub fade fade-3">
+      Fill in 5 fields. Get a polished PDF proposal in 60 seconds.
+      Built for freelancers who'd rather be working than writing.
+    </p>
+    <div class="form-row fade fade-4">
+      <input class="input-email" id="heroEmail" type="email" placeholder="your@gmail.com" autocomplete="email"/>
+      <button class="btn-join" onclick="openModal()">Get early access</button>
+    </div>
+    <div class="form-note fade fade-5">Free to try · No card needed · 2 proposals on us</div>
+  </div>
+</section>
+
+<!-- NUMBERS -->
+<section class="numbers">
+  <div class="wrap">
+    <div class="num-item fade fade-3">
+      <div class="num-val">60s</div>
+      <div class="num-lab">Average proposal<br>generation time</div>
+    </div>
+    <div class="num-item fade fade-4">
+      <div class="num-val">36%</div>
+      <div class="num-lab">Higher close rate<br>vs manual proposals</div>
+    </div>
+    <div class="num-item fade fade-5">
+      <div class="num-val">$0</div>
+      <div class="num-lab">To start — free<br>forever for 2 proposals</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="wrap">
+    <div class="section-label">How it works</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-n">1</div>
+        <div>
+          <div class="step-title">Fill 5 fields</div>
+          <div class="step-desc">Client name, project type, budget, deliverables, your niche. That's the whole form.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-n">2</div>
+        <div>
+          <div class="step-title">AI writes the proposal</div>
+          <div class="step-desc">Scope of work, timeline, pricing table, and a confident closing paragraph — written in seconds.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-n">3</div>
+        <div>
+          <div class="step-title">Download & send</div>
+          <div class="step-desc">One-click PDF export. Professional layout. Ready to forward to your client today.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHO IT'S FOR -->
+<section class="for">
+  <div class="wrap">
+    <div class="section-label">Who it's for</div>
+    <div class="for-grid">
+      <div class="for-tag">Web designers</div>
+      <div class="for-tag">Freelance developers</div>
+      <div class="for-tag">Video editors</div>
+      <div class="for-tag">Marketing consultants</div>
+      <div class="for-tag">UX / product designers</div>
+      <div class="for-tag">Copywriters</div>
+    </div>
+  </div>
+</section>
+
+<!-- BOTTOM CTA -->
+<section class="bottom-cta">
+  <div class="wrap">
+    <div class="cta-hed">Ready to send better proposals?</div>
+    <div class="cta-sub">Join the waitlist. You'll be first to try it — free.</div>
+    <div class="form-row">
+      <input class="input-email" id="bottomEmail" type="email" placeholder="your@gmail.com" autocomplete="email"/>
+      <button class="btn-join" onclick="openModal('bottom')">Join waitlist</button>
+    </div>
+    <div class="form-note">No spam. One email when we launch.</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="footer-logo">PropForge</div>
+    <div class="footer-copy">© 2026 · BUILT FOR FREELANCERS</div>
+  </div>
+</footer>
+
+<!-- MODAL (inline waitlist — replace iframe src with your Tally link) -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modalBox">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2>You're early. <em style="font-style:italic;color:var(--rust)">Good.</em></h2>
+    <p>Drop your email and we'll give you free access the day it launches — plus 2 proposals on us, no card needed.</p>
+    <input class="modal-input" id="modalEmail" type="email" placeholder="your@gmail.com"/>
+    <select class="modal-select" id="modalType">
+      <option value="" disabled selected>What type of freelancer are you?</option>
+      <option>Web designer</option>
+      <option>Developer</option>
+      <option>Video editor</option>
+      <option>Copywriter / Content</option>
+      <option>Marketing consultant</option>
+      <option>UX / Product designer</option>
+      <option>Other</option>
+    </select>
+    <button class="modal-btn" onclick="submitForm()">Reserve my spot →</button>
+    <div class="modal-note">No spam · Unsubscribe any time</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">✓ You're on the list — we'll be in touch!</div>
+
+<script>
+  // Pre-fill modal email from hero/bottom inputs
+  function openModal(from) {
+    const src = from === 'bottom' ? 'bottomEmail' : 'heroEmail';
+    const val = document.getElementById(src).value;
+    if (val) document.getElementById('modalEmail').value = val;
+    document.getElementById('modalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function closeModalOutside(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  function submitForm() {
+    const email = document.getElementById('modalEmail').value.trim();
+    const type  = document.getElementById('modalType').value;
+    if (!email || !email.includes('@')) {
+      document.getElementById('modalEmail').style.borderColor = '#b84a2a';
+      return;
+    }
+
+    // ── REPLACE THIS with your Tally hidden form submission or API call ──
+    // For now, simulates success:
+    closeModal();
+    showToast();
+    document.getElementById('heroEmail').value = '';
+    document.getElementById('bottomEmail').value = '';
+  }
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // Escape key closes modal
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+
+</body>
+</html>
